@@ -1,84 +1,109 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios from "axios"
+import type { AxiosInstance, AxiosRequestConfig } from "axios"
+import { ElMessage } from "element-plus"
+import { get } from "lodash-es"
+import { getToken } from "@/utils/auth"
+import router from "@/router"
 
-import { getToken } from './auth';
-import router from '@/router';
-
-// baseURL
-const BASE_URL = window._CONFIG.BASE_URL as any;
-
-const instance = axios.create({
-  baseURL: BASE_URL,
-  withCredentials: true,
-  timeout: 10000,
-});
-
-instance.interceptors.request.use(
-  (config) => {
-    const token = getToken();
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: token,
-      };
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  },
-);
-
-instance.interceptors.response.use(
-  (response) => {
-    const res = response.data;
-    // 正确状态
-    if (res.code === 200) {
-      return res.result || true;
-    }
-    if (res.code === 401) {
-      router.push('/login');
-    }
-    // 异常
-    console.log(res.message);
-    return undefined;
-  },
-  (error) => {
-    console.log('err' + error); // for debug
-    // 没权限时，不再重复提示
-    if (error === '没有操作权限') return;
-    console.log('网络超时，稍后再试吧');
-  },
-);
-
-const request = <T = any>(
-  config: AxiosRequestConfig | string,
-  options?: AxiosRequestConfig,
-): Promise<T> => {
-  if (typeof config === 'string') {
-    if (!options) {
-      return instance.request<T, T>({
-        url: config,
-      });
-    } else {
-      return instance.request<T, T>({
-        url: config,
-        ...options,
-      });
-    }
-  } else {
-    return instance.request<T, T>(config);
-  }
-};
-export function get<T = any>(config: AxiosRequestConfig, options?: AxiosRequestConfig): Promise<T> {
-  return request({ ...config, method: 'GET' }, options);
+/** 创建请求实例 */
+function createService() {
+    // 创建一个 Axios 实例
+    const service = axios.create()
+    // 请求拦截
+    service.interceptors.request.use(
+        (config) => config,
+        // 发送失败
+        (error) => Promise.reject(error)
+    )
+    // 响应拦截（可根据具体业务作出相应的调整）
+    service.interceptors.response.use(
+        (response) => {
+            // apiData 是 API 返回的数据
+            const apiData = response.data as any
+            // 这个 Code 是和后端约定的业务 Code
+            const code = apiData.code
+            // 如果没有 Code, 代表这不是项目后端开发的 API
+            if (code === undefined) {
+                ElMessage.error("非本系统的接口")
+                return Promise.reject(new Error("非本系统的接口"))
+            } else {
+                switch (code) {
+                    case 0:
+                        // code === 0 代表没有错误
+                        return apiData
+                    default:
+                        // 不是正确的 Code
+                        ElMessage.error(apiData.message || "Error")
+                        return Promise.reject(new Error("Error"))
+                }
+            }
+        },
+        (error) => {
+            // Status 是 HTTP 状态码
+            const status = get(error, "response.status")
+            switch (status) {
+                case 400:
+                    error.message = "请求错误"
+                    break
+                case 401:
+                    localStorage.clear()
+                    router.push("/login")
+                    break
+                case 403:
+                    error.message = "拒绝访问"
+                    break
+                case 404:
+                    error.message = "请求地址出错"
+                    break
+                case 408:
+                    error.message = "请求超时"
+                    break
+                case 500:
+                    error.message = "服务器内部错误"
+                    break
+                case 501:
+                    error.message = "服务未实现"
+                    break
+                case 502:
+                    error.message = "网关错误"
+                    break
+                case 503:
+                    error.message = "服务不可用"
+                    break
+                case 504:
+                    error.message = "网关超时"
+                    break
+                case 505:
+                    error.message = "HTTP 版本不受支持"
+                    break
+                default:
+                    break
+            }
+            ElMessage.error(error.message)
+            return Promise.reject(error)
+        }
+    )
+    return service
 }
 
-export function post<T = any>(
-  config: AxiosRequestConfig,
-  options?: AxiosRequestConfig,
-): Promise<T> {
-  return request({ ...config, method: 'POST' }, options);
+/** 创建请求方法 */
+function createRequestFunction(service: AxiosInstance) {
+    return function (config: AxiosRequestConfig) {
+        const configDefault = {
+            headers: {
+                // 携带 Token
+                Authorization: "Bearer " + getToken(),
+                "Content-Type": get(config, "headers.Content-Type", "application/json")
+            },
+            timeout: 5000,
+            baseURL: window._CONFIG.BASE_URL,
+            data: {}
+        }
+        return service(Object.assign(configDefault, config))
+    }
 }
 
-export default request;
-export type { AxiosInstance, AxiosResponse };
+/** 用于网络请求的实例 */
+export const service = createService()
+/** 用于网络请求的方法 */
+export const request = createRequestFunction(service)

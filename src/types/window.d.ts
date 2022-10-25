@@ -1,3 +1,3 @@
 declare interface Window {
-  _CONFIG: any;
+    _CONFIG: any
 }

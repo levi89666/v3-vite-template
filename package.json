@@ -21,6 +21,7 @@
     "axios": "^0.24.0",
     "dayjs": "^1.11.3",
     "element-plus": "^2.2.19",
+    "eslint-plugin-html": "^7.1.0",
     "pinia": "^2.0.3",
     "sanitize.css": "^13.0.0",
     "sass": "^1.55.0",
