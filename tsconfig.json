@@ -17,12 +17,12 @@
     "noUnusedParameters": true,
     "experimentalDecorators": true,
     "lib": ["dom", "esnext"],
-    "types": ["vite/client"],
+    "types": ["node","vite/client"],
     "typeRoots": ["./node_modules/@types/", "./types"],
     "noImplicitAny": false,
     "skipLibCheck": true,
     "paths": {
-      "/@/*": ["src/*"],
+      "@/*": ["src/*"],
       "/#/*": ["types/*"]
     }
   },

@@ -1,43 +1,149 @@
+<script lang="ts" setup>
+  import { reactive, ref } from 'vue';
+  import { useRouter } from 'vue-router';
+  // import { useUserStore } from '@/store/modules/user';
+  import { User, Lock } from '@element-plus/icons-vue';
+  import type { FormInstance, FormRules } from 'element-plus';
+  import { setToken } from '@/utils/auth';
+  // import { getLoginCodeApi } from '@/api/login';
+  // import type { ILoginData } from '@/api/login';
+
+  const router = useRouter();
+  const loginFormRef = ref<FormInstance | null>(null);
+
+  /** 登录按钮 Loading */
+  const loading = ref(false);
+  /** 登录表单数据 */
+  const loginForm = reactive({
+    username: 'admin',
+    password: '12345678',
+    code: '',
+  });
+  /** 登录表单校验规则 */
+  const loginFormRules: FormRules = {
+    username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+    password: [
+      { required: true, message: '请输入密码', trigger: 'blur' },
+      { min: 8, max: 16, message: '长度在 8 到 16 个字符', trigger: 'blur' },
+    ],
+  };
+  /** 登录逻辑 */
+  const handleLogin = () => {
+    setToken('123213');
+    router.push({ path: '/' });
+    // loginFormRef.value?.validate((valid: boolean) => {
+    //   if (valid) {
+    //     loading.value = true;
+    //     router.push({ path: '/' });
+    //     // useUserStore()
+    //     //   .login({
+    //     //     username: loginForm.username,
+    //     //     password: loginForm.password,
+    //     //   })
+    //     //   .then(() => {
+    //     //     router.push({ path: '/' });
+    //     //   })
+    //     //   .catch(() => {
+    //     //     loginForm.password = '';
+    //     //   })
+    //     //   .finally(() => {
+    //     //     loading.value = false;
+    //     //   });
+    //   } else {
+    //     return false;
+    //   }
+    // });
+  };
+</script>
+
 <template>
-  <div class="login-container rowCC">
-    <a-card class="login" :bordered="false" :body-style="{ width: '480px', padding: '30px 0' }">
-      <div class="login_right_container">
-        <div class="title_box">
-          <h2 class="title">{{ APP_TITLE }}</h2>
-        </div>
-        <!-- form -->
-        <login-form />
+  <div class="login-container">
+    <div class="login-card">
+      <div class="title"> 后台 </div>
+      <div class="content">
+        <el-form
+          ref="loginFormRef"
+          :model="loginForm"
+          :rules="loginFormRules"
+          @keyup.enter="handleLogin"
+        >
+          <el-form-item prop="username">
+            <el-input
+              v-model.trim="loginForm.username"
+              placeholder="用户名"
+              type="text"
+              tabindex="1"
+              :prefix-icon="User"
+              size="large"
+            />
+          </el-form-item>
+          <el-form-item prop="password">
+            <el-input
+              v-model.trim="loginForm.password"
+              placeholder="密码"
+              type="password"
+              tabindex="2"
+              :prefix-icon="Lock"
+              size="large"
+              show-password
+            />
+          </el-form-item>
+          <el-button :loading="loading" type="primary" size="large" @click.prevent="handleLogin">
+            登 录
+          </el-button>
+        </el-form>
       </div>
-    </a-card>
+    </div>
   </div>
 </template>
-<script setup lang="ts">
-  import LoginForm from './Form.vue';
-  import { APP_TITLE } from '../../../config/constant';
-</script>
-<style lang="less" scoped>
+
+<style lang="scss" scoped>
   .login-container {
-    width: 100vw;
-    height: 100vh;
-    background-image: linear-gradient(to right, #74ebd5 0%, #9face6 100%);
-    .login {
-      border-radius: 10px;
-      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
-      // background-image: linear-gradient(to top, #9795f0 0%, #fbc8d4 100%);
-      &_right {
-        padding-top: 80px;
-        &_container {
-          width: 360px;
-          margin: 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    min-height: 100%;
+    .theme-switch {
+      position: fixed;
+      top: 5%;
+      right: 5%;
+      cursor: pointer;
+    }
+    .login-card {
+      width: 480px;
+      border-radius: 20px;
+      box-shadow: 0 0 10px #dcdfe6;
+      background-color: #fff;
+      overflow: hidden;
+      .title {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 50px;
+        img {
+          height: 100%;
         }
       }
-    }
-  }
-  .title_box {
-    display: flex;
-    .title {
-      font-size: 22px;
-      color: #000000;
+      .content {
+        padding: 20px 50px 50px 50px;
+        :deep(.el-input-group__append) {
+          padding: 0;
+          overflow: hidden;
+          .el-image {
+            width: 100px;
+            height: 40px;
+            border-left: 0px;
+            user-select: none;
+            cursor: pointer;
+            text-align: center;
+          }
+        }
+        .el-button {
+          width: 100%;
+          margin-top: 10px;
+        }
+      }
     }
   }
 </style>
